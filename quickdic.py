@@ -2,6 +2,7 @@ import logging
 import subprocess
 import string
 import re
+import os
 import pwnagotchi.plugins as plugins
 
 '''
@@ -41,7 +42,8 @@ class QuickDic(plugins.Plugin):
                                 shell=True, stdout=subprocess.PIPE)
         result = result.stdout.decode('utf-8').translate({ord(c): None for c in string.whitespace})
         if not result:
-            logging.info("[quickdic] No handshake")
+            logging.info("[quickdic] No handshake, deleting " + filename)
+            os.system("rm -rf " + filename)
         else:
             logging.info("[quickdic] Handshake confirmed")
             result2 = subprocess.run(('aircrack-ng -w `echo ' + self.options[
