@@ -18,28 +18,45 @@ class VerifyHandshake(plugins.Plugin):
     
     def __init__(self):
         self.text_to_set = ""
-        
-    def check_eapol_and_pmkid(pcap_file):
+    
+    def is_valid_handshake(eapol_packets):
+        # Check for a valid handshake structure
+        if len(eapol_packets) == 4:
+            if all([pkt.haslayer(EAPOL) for pkt in eapol_packets]):
+                return True
+        return False
+
+    def check_for_valid_handshake_or_pmkid(pcap_file):
         capture = rdpcap(pcap_file)
 
-        eapol_or_pmkid_found = False
+        eapol_packets = []
+        found = False
 
         for packet in capture:
-            if packet.haslayer(EAPOL) or (packet.haslayer(Dot11Elt) and packet[Dot11Elt].ID == 48):
-                eapol_or_pmkid_found = True
+            if packet.haslayer(EAPOL):
+                eapol_packets.append(packet)
 
-            # If either EAPOL or PMKID is found, no need to continue
-            if eapol_or_pmkid_found:
+                if VerifyHandshake.is_valid_handshake(eapol_packets):
+                    found = True
+
+            # Check for PMKID
+            if packet.haslayer(Dot11Elt) and packet[Dot11Elt].ID == 48:
+                found = True
+
+            if found:
                 break
 
-        return eapol_or_pmkid_found
+            if len(eapol_packets) > 4:
+                eapol_packets.pop(0)
+
+        return found
     
     def on_loaded(self):
         logging.info("[VerifyHandshake] plugin loaded")
         # TODO: Check that scapy is installed
         
     def on_handshake(self, agent, filename, access_point, client_station):
-        eapol_or_pmkid = VerifyHandshake.check_eapol_and_pmkid(filename)
+        eapol_or_pmkid = VerifyHandshake.check_for_valid_handshake_or_pmkid(filename)
         
         if eapol_or_pmkid:
             logging.info("[VerifyHandshake] Handshake or PMKID detected")
