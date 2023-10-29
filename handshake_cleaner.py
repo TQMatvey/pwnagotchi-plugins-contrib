@@ -14,8 +14,6 @@ class HandshakeCleaner(plugins.Plugin):
 
     def on_loaded(self):
         logging.info("[HandshakeCleaner] plugin loaded")
-
-    def on_periodic(self):
         # Function called periodically
         pcap_dir = "/root/handshakes/"
         pcap_files = glob.glob(os.path.join(pcap_dir, "*.pcap"))
@@ -30,7 +28,4 @@ class HandshakeCleaner(plugins.Plugin):
             if 'pmkid' not in result:
                 os.remove(pcap_file)
                 logging.warning(f"Deleted: {pcap_file}")
-
-    def get_status(self):
-        return "Checking /root/handshakes/ for PCAP files without handshakes or PMKID."
 
